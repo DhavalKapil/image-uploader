@@ -17,6 +17,18 @@ class ImageUpload
   private $path;
 
   /**
+   * List of valid mime types
+   *
+   * @var array
+   */
+  private static $ALLOWED_MIME_TYPES = array(
+    "image/gif",
+    "image/jpg",
+    "image/png",
+    "image/bmp",
+  );
+
+  /**
    * Constructor function
    */
   public function __construct($_files = null, $path = null)
@@ -114,6 +126,26 @@ class ImageUpload
   }
 
   /**
+   * Checks the mime type of the image
+   *
+   * @var         string        The name of the input file element
+   */
+  private function checkMimeType($image)
+  {
+    // Extracting mime type using getimagesize
+    $image_info = getimagesize($this->_files[$image]["tmp_name"]);
+    if ($image_info === null) {
+      throw new  Exception("Invalid image type");
+    }
+    
+    $mime_type = $image_info["mime"];
+
+    if (!in_array($mime_type, self::$ALLOWED_MIME_TYPES)) {
+      throw new Exception("Invalid image MIME type");
+    }
+  }
+
+  /**
    * Makes a list of security checks before uploading
    * Throws an exception on any error
    *
@@ -123,6 +155,7 @@ class ImageUpload
   {
     $this->checkParameters($image);
     $this->checkFilesError($image);
+    $this->checkMimeType($image);
   }
 
   /**
