@@ -66,12 +66,11 @@ class ImageUpload
   }
 
   /**
-   * Makes a list of security checks before uploading
-   * Throws an exception on any error
+   * Checks the files and path parameters
    *
-   * @var         string        The name of the input file element
+   * @var         string         The name of the input file element
    */
-  private function securityCheck($image)
+  private function checkParameters($image)
   {
     // Checking if both _file and path are valid
     if (!is_array($this->_files)) {
@@ -83,6 +82,47 @@ class ImageUpload
     if (!file_exists($this->path)) {
       throw new Exception("Given path does not exists");
     }
+  }
+
+  /**
+   * Checks $_FILES[$image]['error']
+   *
+   * @var         string        The name of the input file element
+   */
+  private function checkFilesError($image)
+  {
+    if ( !isset($this->_files[$image]['error']) || is_array($this->_files[$image]['error']) ) {
+      throw new Exception("Invalid parameters");
+    }
+
+    switch ($this->_files[$image]['error']) {
+
+      case UPLOAD_ERR_OK:
+        break;
+
+      case UPLOAD_ERR_NO_FILE:
+        throw new Exception('No file sent.');
+
+      case UPLOAD_ERR_INI_SIZE:
+
+      case UPLOAD_ERR_FORM_SIZE:
+        throw new Exception('Exceeded filesize limit.');
+
+      default:
+        throw new Exception('Unknown errors.');
+    }
+  }
+
+  /**
+   * Makes a list of security checks before uploading
+   * Throws an exception on any error
+   *
+   * @var         string        The name of the input file element
+   */
+  private function securityCheck($image)
+  {
+    $this->checkParameters($image);
+    $this->checkFilesError($image);
   }
 
   /**
