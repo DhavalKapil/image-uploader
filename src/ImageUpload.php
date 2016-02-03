@@ -66,6 +66,26 @@ class ImageUpload
   }
 
   /**
+   * Makes a list of security checks before uploading
+   * Throws an exception on any error
+   *
+   * @var         string        The name of the input file element
+   */
+  private function securityCheck($image)
+  {
+    // Checking if both _file and path are valid
+    if (!is_array($this->_files)) {
+      throw new Exception("Invalid FILES parameter");
+    }
+    if (!is_array($this->_files[$image])) {
+      throw new Exception("No image with given name uploaded");
+    }
+    if (!file_exists($this->path)) {
+      throw new Exception("Given path does not exists");
+    }
+  }
+
+  /**
    * Uploads a particular image
    *
    * @var         $image        The name of the input file element
@@ -74,6 +94,8 @@ class ImageUpload
    */
   public function upload($image)
   {
+    $this->securityCheck($image);
+
     $destination_path = $this->path . DIRECTORY_SEPARATOR . $this->_files[$image]["name"];
     $result = move_uploaded_file($this->_files[$image]["tmp_name"], $destination_path);
 
