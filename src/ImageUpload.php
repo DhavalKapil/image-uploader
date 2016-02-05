@@ -17,6 +17,13 @@ class ImageUpload
   private $path;
 
   /**
+   * The salt used by the application to encrypt image path
+   *
+   * @var string
+   */
+  private $salt;
+
+  /**
    * List of valid mime types
    *
    * @var array
@@ -31,10 +38,11 @@ class ImageUpload
   /**
    * Constructor function
    */
-  public function __construct($_files = null, $path = null)
+  public function __construct($_files = null, $path = null, $salt = null)
   {
     $this->_files = $_files;
     $this->path = $path;
+    $this->salt = $salt;
   }
 
   /**
@@ -50,7 +58,7 @@ class ImageUpload
   /**
    * Get $_files
    *
-   * @return      @array        The $_FILES array
+   * @return      array         The $_FILES array
    */
   public function getFiles()
   {
@@ -78,9 +86,29 @@ class ImageUpload
   }
 
   /**
+   * Set $salt
+   *
+   * @param       $salt         The salt
+   */
+  public function setSalt($salt)
+  {
+    $this->salt = $salt;
+  }
+
+  /**
+   * Get $salt
+   *
+   * @return      string        The salt
+   */
+  public function getSalt()
+  {
+    return $this->salt;
+  }
+
+  /**
    * Checks the files and path parameters
    *
-   * @var         string         The name of the input file element
+   * @var         $image         The name of the input file element
    */
   private function checkParameters($image)
   {
@@ -99,7 +127,7 @@ class ImageUpload
   /**
    * Checks $_FILES[$image]['error']
    *
-   * @var         string        The name of the input file element
+   * @var         $image        The name of the input file element
    */
   private function checkFilesError($image)
   {
@@ -128,7 +156,7 @@ class ImageUpload
   /**
    * Checks the mime type of the image
    *
-   * @var         string        The name of the input file element
+   * @var         $image        The name of the input file element
    */
   private function checkMimeType($image)
   {
@@ -149,7 +177,7 @@ class ImageUpload
    * Makes a list of security checks before uploading
    * Throws an exception on any error
    *
-   * @var         string        The name of the input file element
+   * @var         $image        The name of the input file element
    */
   private function securityCheck($image)
   {
@@ -159,19 +187,79 @@ class ImageUpload
   }
 
   /**
+   * Returns the path of an image depending on identifier
+   *
+   * @var         $identifier   The image identifier
+   *
+   * @return      string        The path of the image
+   */
+  private function getImagePath($identifier)
+  {
+    $image_name = "";
+    if ($this->salt === null) {
+      $image_name = md5($identifier);
+    }
+    else {
+      $image_name = md5($identifier . $this->salt);
+    }
+
+    $image_path = $this->path . DIRECTORY_SEPARATOR . $image_name;
+
+    return $image_path;
+  }
+
+  /**
    * Uploads a particular image
    *
    * @var         $image        The name of the input file element
+   * @var         $identifier   The image identifier
    *
    * @return      boolean       Whether the upload was successfull or not
    */
-  public function upload($image)
+  public function upload($image, $identifier)
   {
     $this->securityCheck($image);
 
-    $destination_path = $this->path . DIRECTORY_SEPARATOR . $this->_files[$image]["name"];
+    $destination_path = $this->getImagePath($identifier);
     $result = move_uploaded_file($this->_files[$image]["tmp_name"], $destination_path);
 
     return $result;
+  }
+
+  /**
+   * Checks whether an image with this identifier exists or not
+   *
+   * @var         $identifier   The image identifier
+   *
+   * @return      bool          whether an image exists or not
+   */
+  public function exists($identifier)
+  {
+    $image_path = $this->getImagePath($identifier);
+
+    return file_exists($image_path);
+  }
+
+  /**
+   * Serves an image
+   *
+   * @var         $identifier   The image identifier
+   *
+   * @return      bool          success or failure
+   */
+  public function serve($identifier)
+  {
+    if (!$this->exists($identifier)) {
+      return false;
+    }
+
+    // Calculating the image path and the mime type
+    $image_path = $this->getImagePath($identifier);
+    $mime_type = getimagesize($image_path)["mime"];
+
+    header("Content-Type: " . $mime_type);
+    readfile($image_path);
+
+    return true;
   }
 }
