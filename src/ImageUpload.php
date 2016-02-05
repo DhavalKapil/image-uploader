@@ -24,6 +24,11 @@ class ImageUpload
   private $salt;
 
   /**
+   * @var array     The min and max image size allowed for upload (in bytes)
+   */
+    protected $size;
+
+  /**
    * List of valid mime types
    *
    * @var array
@@ -38,11 +43,12 @@ class ImageUpload
   /**
    * Constructor function
    */
-  public function __construct($_files = null, $path = null, $salt = null)
+  public function __construct($_files = null, $path = null, $salt = null, $min = null, $max = null)
   {
     $this->_files = $_files;
     $this->path = $path;
     $this->salt = $salt;
+    $this->setSize($min, $max);
   }
 
   /**
@@ -104,6 +110,17 @@ class ImageUpload
   {
     return $this->salt;
   }
+  /**
+    * Sets the min and max size limit
+    *
+    * @param  $min   int minimum value in bytes
+    * @param  $max   int maximum value in bytes
+    *
+    */
+   public function setSize($min = null, $max = null)
+   {
+       $this->size = array($min, $max);
+   }
 
   /**
    * Checks the files and path parameters
@@ -165,7 +182,7 @@ class ImageUpload
     if ($image_info === null) {
       throw new  Exception("Invalid image type");
     }
-    
+
     $mime_type = $image_info["mime"];
 
     if (!in_array($mime_type, self::$ALLOWED_MIME_TYPES)) {
@@ -184,6 +201,7 @@ class ImageUpload
     $this->checkParameters($image);
     $this->checkFilesError($image);
     $this->checkMimeType($image);
+    $this->checkFileSize($image);
   }
 
   /**
@@ -262,4 +280,21 @@ class ImageUpload
 
     return true;
   }
+
+  /**
+   * Checks if uploaded file size is within upload limit
+   * Throws an exception on any error
+   *
+   * @var         string        The name of the input file element
+   */
+   public function checkFileSize($allowed_size, $image)
+   {
+     //No need to check image size, if unspecified by user
+     if(empty($this->size)) return;
+
+     list($min_size, $max_size) = $this->size;
+     if($this->_files[$image]['size'] > $max_size || $this->_file['size'] < $min_size) {
+       throw new  Exception("Size limit exceeded");
+     }
+   }
 }
