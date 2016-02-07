@@ -1,6 +1,6 @@
 <?php
 
-class ImageUpload
+class ImageUploader
 {
   /**
    * The path to uplaod the images

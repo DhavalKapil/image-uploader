@@ -1,10 +1,10 @@
 <?php
 
-require ("../src/ImageUpload.php");
+require ("../src/ImageUploader.php");
 
 try
 {
-  $imageUpload = new ImageUpload("../upload", "random_salt");
+  $imageUpload = new ImageUploader("../upload", "random_salt");
 
   // An optional custom callback to process the uploaded image using GD library
   $img_filter = IMG_FILTER_GRAYSCALE;
