@@ -204,11 +204,25 @@ class ImageUpload
   }
 
   /**
-   * Checks the mime type as well as uses the GD library to reprocess the image
+   * Makes a list of security checks before uploading
+   * Throws an exception on any error
    *
    * @var         $image        The $_FILE["image"] parameter
    */
-  private function reprocessImage($image)
+  private function securityChecks($image)
+  {
+    $this->checkParameters($image);
+    $this->checkUploadError($image);
+    $this->checkFileSize($image);
+  }
+
+  /**
+   * Checks the mime type as well as uses the GD library to reprocess the image
+   *
+   * @var         $image        The $_FILE["image"] parameter
+   * @var         $callback     The callback function for further image manipulations
+   */
+  private function reprocessImage($image, $callback)
   {
     // Extracting mime type using getimagesize
     $image_info = getimagesize($image["tmp_name"]);
@@ -232,24 +246,15 @@ class ImageUpload
       throw new Exception("Unable to create reprocessed image from file");
     }
 
+    // Calling callback(if set) with path of image as a parameter
+    if ($callback !== null) {
+      $callback($reprocessed_image);
+    }
+
     $image_to_file($reprocessed_image, $image["tmp_name"], $image_quality);
 
     // Freeing up memory
     imagedestroy($reprocessed_image);
-  }
-
-  /**
-   * Makes a list of security checks before uploading
-   * Throws an exception on any error
-   *
-   * @var         $image        The $_FILE["image"] parameter
-   */
-  private function securityCheck($image)
-  {
-    $this->checkParameters($image);
-    $this->checkUploadError($image);
-    $this->checkFileSize($image);
-    $this->reprocessImage($image);
   }
 
   /**
@@ -279,12 +284,15 @@ class ImageUpload
    *
    * @var         $image        The $_FILE["image"] parameter
    * @var         $identifier   The image identifier
+   * @var         $callback     The callback to be called after security checks
    *
    * @return      boolean       Whether the upload was successfull or not
    */
-  public function upload($image, $identifier)
+  public function upload($image, $identifier, $callback = null)
   {
-    $this->securityCheck($image);
+    $this->securityChecks($image);
+
+    $this->reprocessImage($image, $callback);
 
     $destination_path = $this->getImagePath($identifier);
     $result = move_uploaded_file($image["tmp_name"], $destination_path);

@@ -6,7 +6,14 @@ try
 {
   $imageUpload = new ImageUpload("../upload", "random_salt");
 
-  $res = $imageUpload->upload($_FILES["my_image"], "my_id");
+  // An optional custom callback to process the uploaded image using GD library
+  $img_filter = IMG_FILTER_GRAYSCALE;
+
+  $custom_callback = function($image) use($img_filter) {
+    imagefilter($image, $img_filter);
+  };
+
+  $res = $imageUpload->upload($_FILES["my_image"], "my_id", $custom_callback);
 
   var_dump($res);
 }
