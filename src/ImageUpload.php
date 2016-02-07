@@ -36,6 +36,7 @@ class ImageUpload
   private static $ALLOWED_MIME_TYPES = array(
     "image/gif",
     "image/jpg",
+    "image/jpeg",
     "image/png",
     "image/bmp",
   );
