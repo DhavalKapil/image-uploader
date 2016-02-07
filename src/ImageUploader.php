@@ -3,7 +3,7 @@
 class ImageUploader
 {
   /**
-   * The path to uplaod the images
+   * The path to upload the images
    *
    * @var string
    */
