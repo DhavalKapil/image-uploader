@@ -4,7 +4,7 @@ require ("../src/ImageUploader.php");
 
 try
 {
-  $imageUpload = new ImageUploader("../upload", "random_salt");
+  $imageUploader = new ImageUploader("../upload", "random_salt");
 
   // An optional custom callback to process the uploaded image using GD library
   $img_filter = IMG_FILTER_GRAYSCALE;
@@ -13,7 +13,7 @@ try
     imagefilter($image, $img_filter);
   };
 
-  $res = $imageUpload->upload($_FILES["my_image"], "my_id", $custom_callback);
+  $res = $imageUploader->upload($_FILES["my_image"], "my_id", $custom_callback);
 
   var_dump($res);
 }
