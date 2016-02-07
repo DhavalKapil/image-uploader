@@ -31,16 +31,16 @@ class ImageUpload
   private $max_size;
 
   /**
-   * List of valid mime types
+   * List of valid mime types alongwith processing functions
    *
    * @var array
    */
-  private static $ALLOWED_MIME_TYPES = array(
-    "image/gif",
-    "image/jpg",
-    "image/jpeg",
-    "image/png",
-    "image/bmp",
+  private static $MIME_TYPES_PROCESSORS = array(
+    "image/gif"       => array("imagecreatefromgif", "imagegif", 100),
+    "image/jpg"       => array("imagecreatefromjpeg", "imagejpeg", 100),
+    "image/jpeg"      => array("imagecreatefromjpeg", "imagejpeg", 100),
+    "image/png"       => array("imagecreatefrompng", "imagepng", 9),
+    "image/bmp"       => array("imagecreatefromwbmp", "imagewbmp", 100)
   );
 
   /**
@@ -147,9 +147,11 @@ class ImageUpload
     if (!is_array($image)) {
       throw new Exception("No image with given name uploaded");
     }
+
     if (!file_exists($this->path)) {
       throw new Exception("Given path does not exists");
     }
+    
     if ($this->min_file_size !== null
       && $this->max_file_size !== null
       && $this->min_file_size > $this->max_file_size) {
@@ -187,26 +189,6 @@ class ImageUpload
   }
 
   /**
-   * Checks the mime type of the image
-   *
-   * @var         $image        The $_FILE["image"] parameter
-   */
-  private function checkMimeType($image)
-  {
-    // Extracting mime type using getimagesize
-    $image_info = getimagesize($image["tmp_name"]);
-    if ($image_info === null) {
-      throw new Exception("Invalid image type");
-    }
-
-    $mime_type = $image_info["mime"];
-
-    if (!in_array($mime_type, self::$ALLOWED_MIME_TYPES)) {
-      throw new Exception("Invalid image MIME type");
-    }
-  }
-
-  /**
    * Checks if uploaded file size is within upload limit
    *
    * @var         $image        The $_FILE["image"] parameter
@@ -222,6 +204,41 @@ class ImageUpload
   }
 
   /**
+   * Checks the mime type as well as uses the GD library to reprocess the image
+   *
+   * @var         $image        The $_FILE["image"] parameter
+   */
+  private function reprocessImage($image)
+  {
+    // Extracting mime type using getimagesize
+    $image_info = getimagesize($image["tmp_name"]);
+    if ($image_info === null) {
+      throw new Exception("Invalid image type");
+    }
+
+    $mime_type = $image_info["mime"];
+
+    if (!array_key_exists($mime_type, self::$MIME_TYPES_PROCESSORS)) {
+      throw new Exception("Invalid image MIME type");
+    }
+
+    $image_from_file = self::$MIME_TYPES_PROCESSORS[$mime_type][0];
+    $image_to_file = self::$MIME_TYPES_PROCESSORS[$mime_type][1];
+    $image_quality = self::$MIME_TYPES_PROCESSORS[$mime_type][2];
+
+    $reprocessed_image = $image_from_file($image["tmp_name"]);
+
+    if (!$reprocessed_image) {
+      throw new Exception("Unable to create reprocessed image from file");
+    }
+
+    $image_to_file($reprocessed_image, $image["tmp_name"], $image_quality);
+
+    // Freeing up memory
+    imagedestroy($reprocessed_image);
+  }
+
+  /**
    * Makes a list of security checks before uploading
    * Throws an exception on any error
    *
@@ -231,8 +248,8 @@ class ImageUpload
   {
     $this->checkParameters($image);
     $this->checkUploadError($image);
-    $this->checkMimeType($image);
     $this->checkFileSize($image);
+    $this->reprocessImage($image);
   }
 
   /**
