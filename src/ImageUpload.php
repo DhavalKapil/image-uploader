@@ -17,9 +17,18 @@ class ImageUpload
   private $salt;
 
   /**
-   * @var array     The min and max image size allowed for upload (in bytes)
+   * The min size allowed for upload (in bytes)
+   *
+   * @var number     
    */
-    protected $size;
+  private $min_size;
+
+  /**
+   * The max size allowed for upload (in bytes)
+   *
+   * @var number     
+   */
+  private $max_size;
 
   /**
    * List of valid mime types
@@ -37,11 +46,15 @@ class ImageUpload
   /**
    * Constructor function
    */
-  public function __construct($path = null, $salt = null, $min = null, $max = null)
+  public function __construct($path = null,
+                              $salt = null,
+                              $min_file_size = null,
+                              $max_file_size = null)
   {
     $this->path = $path;
     $this->salt = $salt;
-    $this->setSize($min, $max);
+    $this->min_file_size = $min_file_size;
+    $this->max_file_size = $max_file_size;
   }
 
   /**
@@ -83,17 +96,46 @@ class ImageUpload
   {
     return $this->salt;
   }
+
   /**
-    * Sets the min and max size limit
-    *
-    * @param  $min   int minimum value in bytes
-    * @param  $max   int maximum value in bytes
-    *
-    */
-   public function setSize($min = null, $max = null)
-   {
-       $this->size = array($min, $max);
-   }
+   * Set $min_file_size
+   *
+   * @param       $min_file_size          The minimum file size
+   */
+  public function setMinFileSize($min_file_size)
+  {
+    $this->min_file_size = $min_file_size;
+  }
+
+  /**
+   * Get $min_file_size
+   *
+   * @return      number                  The minimum file size
+   */
+  public function getMinFileSize()
+  {
+    return $this->min_file_size;
+  }
+
+  /**
+   * Set $max_file_size
+   *
+   * @param       $max_file_size           The maximum file size
+   */
+  public function setMaxFileSize($max_file_size)
+  {
+    $this->max_file_size = $max_file_size;
+  }
+
+  /**
+   * Get $max_file_size
+   *
+   * @return      number                  The maximum file size
+   */
+  public function getMaxFileSize()
+  {
+    return $this->max_file_size;
+  }
 
   /**
    * Checks the files and path parameters
@@ -107,6 +149,11 @@ class ImageUpload
     }
     if (!file_exists($this->path)) {
       throw new Exception("Given path does not exists");
+    }
+    if ($this->min_file_size !== null
+      && $this->max_file_size !== null
+      && $this->min_file_size > $this->max_file_size) {
+      throw new Exception("Invalid file size parameters");
     }
   }
 
@@ -149,13 +196,28 @@ class ImageUpload
     // Extracting mime type using getimagesize
     $image_info = getimagesize($image["tmp_name"]);
     if ($image_info === null) {
-      throw new  Exception("Invalid image type");
+      throw new Exception("Invalid image type");
     }
 
     $mime_type = $image_info["mime"];
 
     if (!in_array($mime_type, self::$ALLOWED_MIME_TYPES)) {
       throw new Exception("Invalid image MIME type");
+    }
+  }
+
+  /**
+   * Checks if uploaded file size is within upload limit
+   *
+   * @var         $image        The $_FILE["image"] parameter
+   */
+  private function checkFileSize($image)
+  {
+    if ($this->min_file_size !== null && $image['size'] < $this->min_file_size) {
+      throw new Exception("Size too small");
+    }
+    if ($this->max_file_size !== null && $image['size'] > $this->max_file_size) {
+      throw new Exception("Size limit exceeded");
     }
   }
 
@@ -249,21 +311,4 @@ class ImageUpload
 
     return true;
   }
-
-  /**
-   * Checks if uploaded file size is within upload limit
-   * Throws an exception on any error
-   *
-   * @var         string        The $_FILE["image"] parameter
-   */
-   public function checkFileSize($allowed_size, $image)
-   {
-     //No need to check image size, if unspecified by user
-     if(empty($this->size)) return;
-
-     list($min_size, $max_size) = $this->size;
-     if($image['size'] > $max_size || $this->_file['size'] < $min_size) {
-       throw new  Exception("Size limit exceeded");
-     }
-   }
 }
