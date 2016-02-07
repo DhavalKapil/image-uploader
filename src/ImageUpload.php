@@ -3,13 +3,6 @@
 class ImageUpload
 {
   /**
-   * The instance of the $_FILES array
-   *
-   * @var array
-   */
-  private $_files;
-
-  /**
    * The path to uplaod the images
    *
    * @var string
@@ -44,32 +37,11 @@ class ImageUpload
   /**
    * Constructor function
    */
-  public function __construct($_files = null, $path = null, $salt = null, $min = null, $max = null)
+  public function __construct($path = null, $salt = null, $min = null, $max = null)
   {
-    $this->_files = $_files;
     $this->path = $path;
     $this->salt = $salt;
     $this->setSize($min, $max);
-  }
-
-  /**
-   * Set $_files
-   *
-   * @param       $_files       The $_FILES array
-   */
-  public function setFiles($_files)
-  {
-    $this->_files = $_files;
-  }
-
-  /**
-   * Get $_files
-   *
-   * @return      array         The $_FILES array
-   */
-  public function getFiles()
-  {
-    return $this->_files;
   }
 
   /**
@@ -126,15 +98,11 @@ class ImageUpload
   /**
    * Checks the files and path parameters
    *
-   * @var         $image         The name of the input file element
+   * @var         $image         The $_FILE["image"] parameter
    */
   private function checkParameters($image)
   {
-    // Checking if both _file and path are valid
-    if (!is_array($this->_files)) {
-      throw new Exception("Invalid FILES parameter");
-    }
-    if (!is_array($this->_files[$image])) {
+    if (!is_array($image)) {
       throw new Exception("No image with given name uploaded");
     }
     if (!file_exists($this->path)) {
@@ -143,17 +111,17 @@ class ImageUpload
   }
 
   /**
-   * Checks $_FILES[$image]['error']
+   * Checks upload error
    *
-   * @var         $image        The name of the input file element
+   * @var         $image        The $_FILE["image"] parameter
    */
-  private function checkFilesError($image)
+  private function checkUploadError($image)
   {
-    if ( !isset($this->_files[$image]['error']) || is_array($this->_files[$image]['error']) ) {
+    if ( !isset($image['error']) || is_array($image['error']) ) {
       throw new Exception("Invalid parameters");
     }
 
-    switch ($this->_files[$image]['error']) {
+    switch ($image['error']) {
 
       case UPLOAD_ERR_OK:
         break;
@@ -174,12 +142,12 @@ class ImageUpload
   /**
    * Checks the mime type of the image
    *
-   * @var         $image        The name of the input file element
+   * @var         $image        The $_FILE["image"] parameter
    */
   private function checkMimeType($image)
   {
     // Extracting mime type using getimagesize
-    $image_info = getimagesize($this->_files[$image]["tmp_name"]);
+    $image_info = getimagesize($image["tmp_name"]);
     if ($image_info === null) {
       throw new  Exception("Invalid image type");
     }
@@ -195,12 +163,12 @@ class ImageUpload
    * Makes a list of security checks before uploading
    * Throws an exception on any error
    *
-   * @var         $image        The name of the input file element
+   * @var         $image        The $_FILE["image"] parameter
    */
   private function securityCheck($image)
   {
     $this->checkParameters($image);
-    $this->checkFilesError($image);
+    $this->checkUploadError($image);
     $this->checkMimeType($image);
     $this->checkFileSize($image);
   }
@@ -230,7 +198,7 @@ class ImageUpload
   /**
    * Uploads a particular image
    *
-   * @var         $image        The name of the input file element
+   * @var         $image        The $_FILE["image"] parameter
    * @var         $identifier   The image identifier
    *
    * @return      boolean       Whether the upload was successfull or not
@@ -240,7 +208,7 @@ class ImageUpload
     $this->securityCheck($image);
 
     $destination_path = $this->getImagePath($identifier);
-    $result = move_uploaded_file($this->_files[$image]["tmp_name"], $destination_path);
+    $result = move_uploaded_file($image["tmp_name"], $destination_path);
 
     return $result;
   }
@@ -286,7 +254,7 @@ class ImageUpload
    * Checks if uploaded file size is within upload limit
    * Throws an exception on any error
    *
-   * @var         string        The name of the input file element
+   * @var         string        The $_FILE["image"] parameter
    */
    public function checkFileSize($allowed_size, $image)
    {
@@ -294,7 +262,7 @@ class ImageUpload
      if(empty($this->size)) return;
 
      list($min_size, $max_size) = $this->size;
-     if($this->_files[$image]['size'] > $max_size || $this->_file['size'] < $min_size) {
+     if($image['size'] > $max_size || $this->_file['size'] < $min_size) {
        throw new  Exception("Size limit exceeded");
      }
    }
