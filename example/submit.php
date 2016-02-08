@@ -9,7 +9,7 @@ try
   // An optional custom callback to process the uploaded image using GD library
   $img_filter = IMG_FILTER_GRAYSCALE;
 
-  $custom_callback = function($image) use($img_filter) {
+  $custom_callback = function(&$image) use($img_filter) {
     imagefilter($image, $img_filter);
   };
 

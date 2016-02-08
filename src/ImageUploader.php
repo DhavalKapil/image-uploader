@@ -36,11 +36,11 @@ class ImageUploader
    * @var array
    */
   private static $MIME_TYPES_PROCESSORS = array(
-    "image/gif"       => array("imagecreatefromgif", "imagegif", 100),
-    "image/jpg"       => array("imagecreatefromjpeg", "imagejpeg", 100),
-    "image/jpeg"      => array("imagecreatefromjpeg", "imagejpeg", 100),
-    "image/png"       => array("imagecreatefrompng", "imagepng", 9),
-    "image/bmp"       => array("imagecreatefromwbmp", "imagewbmp", 100)
+    "image/gif"       => array("imagecreatefromgif", "imagegif"),
+    "image/jpg"       => array("imagecreatefromjpeg", "imagejpeg"),
+    "image/jpeg"      => array("imagecreatefromjpeg", "imagejpeg"),
+    "image/png"       => array("imagecreatefrompng", "imagepng"),
+    "image/bmp"       => array("imagecreatefromwbmp", "imagewbmp")
   );
 
   /**
@@ -262,7 +262,6 @@ class ImageUploader
 
     $image_from_file = self::$MIME_TYPES_PROCESSORS[$mime_type][0];
     $image_to_file = self::$MIME_TYPES_PROCESSORS[$mime_type][1];
-    $image_quality = self::$MIME_TYPES_PROCESSORS[$mime_type][2];
 
     $reprocessed_image = $image_from_file($image["tmp_name"]);
 
@@ -275,7 +274,7 @@ class ImageUploader
       $callback($reprocessed_image);
     }
 
-    $image_to_file($reprocessed_image, $image["tmp_name"], $image_quality);
+    $image_to_file($reprocessed_image, $image["tmp_name"]);
 
     // Freeing up memory
     imagedestroy($reprocessed_image);
@@ -342,10 +341,11 @@ class ImageUploader
    * Serves an image
    *
    * @var         $identifier   The image identifier
+   * @var         $callback     The callback to be called before serving the image
    *
    * @return      bool          success or failure
    */
-  public function serve($identifier)
+  public function serve($identifier, $callback = null)
   {
     if (!$this->exists($identifier)) {
       return false;
@@ -355,9 +355,24 @@ class ImageUploader
     $image_path = $this->getImagePath($identifier);
     $mime_type = getimagesize($image_path)["mime"];
 
-    header("Content-Type: " . $mime_type);
-    readfile($image_path);
+    $image_from_file = self::$MIME_TYPES_PROCESSORS[$mime_type][0];
+    $image_to_file = self::$MIME_TYPES_PROCESSORS[$mime_type][1];
 
-    return true;
+    $image = $image_from_file($image_path);
+
+    if (!$image) {
+      throw new Exception("Unable to read image while serving");
+    }
+
+    if ($callback !== null) {
+      $callback($image);
+    }
+
+    header("Content-Type: " . $mime_type);
+
+    // Output buffering the image
+    $result = $image_to_file($image, null);
+
+    return $result;
   }
 }

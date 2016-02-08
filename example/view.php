@@ -6,7 +6,17 @@ try
 {
   $imageUploader = new ImageUploader("../upload", "random_salt");
 
-  $res = $imageUploader->serve("my_id");
+  // optional
+  $custom_callback = function(&$image) {
+    $image = imagecrop($image, array(
+                          "x" => 0,
+                          "y" => 0,
+                          "width" => 50,
+                          "height" => 50
+                      ));
+  };
+
+  $res = $imageUploader->serve("my_id", $custom_callback);
 
   var_dump($res);
 }
