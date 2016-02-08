@@ -19,14 +19,14 @@ class ImageUploader
   /**
    * The min size allowed for upload (in bytes)
    *
-   * @var number     
+   * @var number
    */
   private $min_size;
 
   /**
    * The max size allowed for upload (in bytes)
    *
-   * @var number     
+   * @var number
    */
   private $max_size;
 
@@ -151,7 +151,7 @@ class ImageUploader
     if (!file_exists($this->path)) {
       throw new Exception("Given path does not exists");
     }
-    
+
     if ($this->min_file_size !== null
       && $this->max_file_size !== null
       && $this->min_file_size > $this->max_file_size) {
@@ -214,6 +214,7 @@ class ImageUploader
     $this->checkParameters($image);
     $this->checkUploadError($image);
     $this->checkFileSize($image);
+    $this->checkInitialBytes($image);
   }
 
   /**
@@ -336,4 +337,20 @@ class ImageUploader
 
     return true;
   }
+
+   /**
+    * Checks if first 100 bytes contains any non ASCII char
+    * Throws an exception on any error
+    *
+    * @var         string        The name of the input file element
+    */
+    public function checkInitialBytes($image)
+    {
+      $contents = file_get_contents($image['tmp_name'], null, null, 0, 100);
+      $regex = '[\x00-\x08 \x0c-\x1f]';
+      if(preg_match($regex, $contents)) {
+        throw new  Exception("Unknown bytes found");
+      }
+    }
+
 }
