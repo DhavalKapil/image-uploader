@@ -24,14 +24,15 @@ The uploaded images go through a lot of security checks before they are uploaded
 
 3. Checks upload errors by analyzing the variable `$_FILES["image-name"]["error"]`
 
-4. Checks image's mime type by using the `getimagesize` function. Does not rely on `$_FILES["image-name"]["type"]`.
+4. Checks for unwanted bytes in the first 100 bytes of the uploaded image.
 
-5. Reprocesses the image using the [GD](http://php.net/manual/en/book.image.php) library to remove any malicious code.
+5. Checks image's mime type by using the `getimagesize` function. Does not rely on `$_FILES["image-name"]["type"]`.
 
-6. Renames the uploaded image, uses `md5` hash(with a user given salt) as the new image name.
+6. Reprocesses the image using the [GD](http://php.net/manual/en/book.image.php) library to remove any malicious code.
 
-7. Uses [move\_uploaded\_file](http://php.net/manual/en/function.move-uploaded-file.php) to properly move the uploaded file to the target destination as well as setting appropriate permissions.
+7. Renames the uploaded image, uses `md5` hash(with a user given salt) as the new image name.
 
+8. Uses [move\_uploaded\_file](http://php.net/manual/en/function.move-uploaded-file.php) to properly move the uploaded file to the target destination as well as setting appropriate permissions.
 
 ## Prerequisites
 
@@ -131,22 +132,28 @@ $result = $imageUplaoder->exists("my_id");
 
 It returns a boolean value.
 
-You can also customize the uploaded image, say by adding filters, cropping, etc by passing a `callback` function to the `upload` function.
+You can also customize the uploaded image, say by adding filters, cropping, etc by passing a `callback` function to the `upload` or `serve` function.
 
 ```php
-$callback = function($image) {
+$callback = function(&$image) {
   imagefilter($image, IMG_FILTER_GRAYSCALE);
 };
 
 $imageUploader->upload($_FILES["my_image"], "my_id", $callback);
 ```
 
-This `callback` accepts a parameter `$image`, which is an image resource used by the [GD](http://php.net/manual/en/book.image.php) library.
+This `callback` accepts a reference `&$image`, which is an image resource used by the [GD](http://php.net/manual/en/book.image.php) library. If passed to the `upload` function, it is called just before the image is being saved. Whereas, if passed to the `serve` function, it is called just before the image is buffered to the browser.
 
 ## Contribution
 
 Contributions are welcome to this repository. If you know of any other security vulnerability, any bug, etc. feel free to file [issues](https://github.com/DhavalKapil/image-uploader/issues) and submit [pull requests](https://github.com/DhavalKapil/image-uploader/pulls).
 
+## Developers
+
+- [Dhaval Kapil](https://github.com/DhavalKapil)
+
+- [Aditya Prakash](https://github.com/adiitya)
+  
 ## License
 
 image-uploader is licensed under the MIT license.
