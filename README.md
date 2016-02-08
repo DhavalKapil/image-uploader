@@ -1,10 +1,10 @@
 # image-uploader
 
-> A simple and elegant PHP library to for securely uploading images
+> A simple and elegant PHP library for securely uploading images
 
 The aim of this project is to provide users with a **simple** interface to upload images in their applications in a **highly secure** manner while also being **highly customizable**.
 
-The uploaded images go through a lot of security checks before they are uploaded. More detailed examination on this later on.
+The uploaded images go through a lot of security checks before they are uploaded.
 
 ## Features
 
