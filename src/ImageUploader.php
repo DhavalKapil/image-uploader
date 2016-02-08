@@ -203,6 +203,29 @@ class ImageUploader
     }
   }
 
+
+
+  /**
+   * Checks if first 100 bytes contains any non ASCII char
+   * Throws an exception on any error
+   *
+   * @var         $image        The $_FILE["image"] parameter
+   */
+  private function checkInitialBytes($image)
+  {
+    // Reading first 100 bytes
+    $contents = file_get_contents($image['tmp_name'], null, null, 0, 100);
+
+    if ($contents === false) {
+      throw new Exception("Unable to read uploaded file");
+    }
+
+    $regex = "[\x00-\x08\x0c-\x1f]";
+    if (preg_match($regex, $contents)) {
+      throw new Exception("Unknown bytes found");
+    }
+  }
+
   /**
    * Makes a list of security checks before uploading
    * Throws an exception on any error
@@ -337,20 +360,4 @@ class ImageUploader
 
     return true;
   }
-
-   /**
-    * Checks if first 100 bytes contains any non ASCII char
-    * Throws an exception on any error
-    *
-    * @var         string        The name of the input file element
-    */
-    public function checkInitialBytes($image)
-    {
-      $contents = file_get_contents($image['tmp_name'], null, null, 0, 100);
-      $regex = '[\x00-\x08 \x0c-\x1f]';
-      if(preg_match($regex, $contents)) {
-        throw new  Exception("Unknown bytes found");
-      }
-    }
-
 }
