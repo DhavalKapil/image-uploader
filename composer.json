@@ -1,0 +1,35 @@
+{
+  "name": "dhaval/image-uploader",
+  "type": "library",
+  "description": "A simple and elegant PHP library for securely uploading images",
+  "keywords": [
+    "image",
+    "upload",
+    "secure",
+    "customize"
+  ],
+  "homepage": "https://github.com/dhavalkapil/image-uploader",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Dhaval Kapil",
+      "email": "me@dhavalkapil.com",
+      "homepage": "https://dhavalkapil.com/",
+      "role": "developer"
+    },
+    {
+      "name": "Aditya Prakash",
+      "email": "adiitya.adda@gmail.com",
+      "homepage": "https://github.com/adiitya",
+      "role": "developer"
+    }
+  ],
+  "require": {
+    "php": ">=5.5.0"
+  },
+  "autoload": {
+      "files": [
+        "src/ImageUploader.php"
+      ]
+  }
+}
