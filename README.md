@@ -41,13 +41,37 @@ The uploaded images go through a lot of security checks before they are uploaded
 
 2. [GD](http://php.net/manual/en/book.image.php) library
 
-  ```
-  sudo apt-get install php5-gd
+ ```
+ sudo apt-get install php5-gd
 
-  sudo service apache2 restart
-  ```
+ sudo service apache2 restart
+ ```
 
 ## Installation
+
+### Composer
+
+Add the following in your composer.json:
+
+```js
+{
+  "require": {
+    "dhaval/image-uploader": "dev-master"
+  }
+}
+```
+
+And then run
+
+```
+php composer.phar install
+```
+
+Include `image-uploader` in your php code
+
+```php
+require("vendor/autoload.php");
+```
 
 ### Manually
 
@@ -71,8 +95,8 @@ First of all create an HTML form to allow people to upload files
 
 ```html
 <form method="POST" action = "submit.php" enctype="multipart/form-data">
-  <input type="file" name="my_image" />
-  <input type="submit" value="Upload" />
+ <input type="file" name="my_image" />
+ <input type="submit" value="Upload" />
 </form>
 ```
 
@@ -136,7 +160,7 @@ You can also customize the uploaded image, say by adding filters, cropping, etc 
 
 ```php
 $callback = function(&$image) {
-  imagefilter($image, IMG_FILTER_GRAYSCALE);
+ imagefilter($image, IMG_FILTER_GRAYSCALE);
 };
 
 $imageUploader->upload($_FILES["my_image"], "my_id", $callback);
@@ -153,7 +177,7 @@ Contributions are welcome to this repository. If you know of any other security 
 - [Dhaval Kapil](https://github.com/DhavalKapil)
 
 - [Aditya Prakash](https://github.com/adiitya)
-  
+ 
 ## License
 
 image-uploader is licensed under the MIT license.
