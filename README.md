@@ -151,7 +151,7 @@ Check out sample [example](https://github.com/DhavalKapil/image-uploader/tree/ma
 You can also check whether a particular image exists for a given identifier using the `exists` function
 
 ```php
-$result = $imageUplaoder->exists("my_id");
+$result = $imageUploader->exists("my_id");
 ```
 
 It returns a boolean value.
