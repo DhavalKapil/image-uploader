@@ -220,7 +220,7 @@ class ImageUploader
       throw new Exception("Unable to read uploaded file");
     }
 
-    $regex = "[\x00-\x08\x0c-\x1f]";
+    $regex = "[\x01-\x08\x0c-\x1f]";
     if (preg_match($regex, $contents)) {
       throw new Exception("Unknown bytes found");
     }
