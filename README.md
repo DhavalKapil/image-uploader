@@ -1,183 +1,70 @@
 # image-uploader
 
-> A simple and elegant PHP library for securely uploading images
-
-The aim of this project is to provide users with a **simple** interface to upload images in their applications in a **highly secure** manner while also being **highly customizable**.
-
-The uploaded images go through a lot of security checks before they are uploaded.
-
-## Features
-
-1. A **clean** interface - **easy to use**.
-
-2. Uploaded images are referenced by a unique identifier - **removes the hassles of storage from the user**.
-
-3. **Customizable** - users of this library can operate on the uploaded images(i.e. crop, add filters, etc.) without even worrying about the uploading process.
-
-4. **Highly secure** - a lot of security checks were compiled from many sources into this one library.
-
-## Security Checklist
-
-1. Checks `$_FILES` parameter for correctness.
-
-2. Checks uploaded image file size, where `min` and `max` sizes are given by the user.
-
-3. Checks upload errors by analyzing the variable `$_FILES["image-name"]["error"]`
-
-4. Checks for unwanted bytes in the first 100 bytes of the uploaded image.
-
-5. Checks image's mime type by using the `getimagesize` function. Does not rely on `$_FILES["image-name"]["type"]`.
-
-6. Reprocesses the image using the [GD](http://php.net/manual/en/book.image.php) library to remove any malicious code.
-
-7. Renames the uploaded image, uses `md5` hash(with a user given salt) as the new image name.
-
-8. Uses [move\_uploaded\_file](http://php.net/manual/en/function.move-uploaded-file.php) to properly move the uploaded file to the target destination as well as setting appropriate permissions.
+A simple yet elegant PHP library for uploading and serving images. The aim of this project is to act as an interface to image uploading and serving on a media server.
 
 ## Prerequisites
 
 1. Successfully tested on PHP >= 5.5
+2. [GD](http://php.net/manual/en/book.image.php) is required (`sudo apt-get install php5-gd` will do)
 
+## Installation using Composer
 
-2. [GD](http://php.net/manual/en/book.image.php) library
+Add the following dependency to your `composer.json` file:
 
- ```
- sudo apt-get install php5-gd
-
- sudo service apache2 restart
- ```
-
-## Installation
-
-### Composer
-
-Add the following in your composer.json:
-
-```js
+```json
 {
   "require": {
-    "dhaval/image-uploader": "dev-master"
+    "fknussel/image-uploader": "dev-master"
   }
 }
 ```
 
-And then run
+Fetch the dependecy by running:
 
 ```
 php composer.phar install
 ```
 
-Include `image-uploader` in your php code
+Finally, import `image-uploader` into your script:
 
 ```php
 require("vendor/autoload.php");
 ```
 
-### Manually
-
-Clone this repository in your project's home directory
-
-```
-git clone https://github.com/dhavalkapil/image-uploader
-```
-
-Include `ImageUploader.php` in your php code.
-
-```php
-require("image-uploader/src/ImageUploader.php");
-```
-
 ## Usage
 
-### Frontend
-
-First of all create an HTML form to allow people to upload files
-
-```html
-<form method="POST" action = "submit.php" enctype="multipart/form-data">
- <input type="file" name="my_image" />
- <input type="submit" value="Upload" />
-</form>
-```
-
-### Backend
-
-Create an instance of `ImageUploader` and set appropriate attributes
+### Serving images
 
 ```php
-$imageUploader = new ImageUploader();
-
-// Compulsory
-$imageUploader->setPath("my/upload/image/dir");   // The directory where images will be uploaded
-
-// The rest are optional
-$imageUploader->setSalt("my_application_specific_salt");  // It is used while hashing image names
-$imageUploader->setMinFileSize(0);                           // Set minimum file size in bytes
-$imageUploader->setMaxFileSize(100000);                      // Set maximum file size in bytes
+try {
+  $imageUploader = new ImageUploader(UPLOAD_DIR, MD5_HASH_SALT);
+  $res = $imageUploader->serve($_GET["identifier"]);
+  var_dump($res);
+} catch (Exception $e) {
+  var_dump($e);
+}
 ```
 
-You can also pass these attributes directly while calling the constructor.
-
-It is advised to create the upload directory(passed above in path) as follows:
-
-```
-mkdir upload_dir
-chmod 755 upload_dir
-[sudo] chown www-data:www-data upload_dir
-```
-
-**Note**: `www-data` is the user that apache runs under. You might need to change it depending on your machine.
-
-To upload an image use the `upload` function
+### Uploading images
 
 ```php
-$imageUploader->upload($_FILES["my_image"], "my_id");
+try {
+  $imageUploader = new ImageUploader();
+  $imageUploader->setPath(UPLOAD_DIR);
+  $imageUploader->setSalt(MD5_HASH_SALT);
+  $imageUploader->setMaxFileSize(MAX_FILE_SIZE);
+
+  $uid = time() . rand();
+  $success = $imageUploader->upload($_FILES[INPUT_FIELD_NAME], $uid);
+
+  echo json_encode(array("sucess" => $success););
+} catch (Exception $e) {
+  die($e);
+}
 ```
 
-Here, `my_image` was the name of the input element in your HTML and `my_id` is a unique identifier for your image. This needs to be decided by the user.
-
-To serve an image at a particular page use the `serve` function
-
-```php
-$imageUploader->serve("my_id");
-```
-
-The image uploaded with this particular identifier will be served. Hence, there will be no direct link to the image itself. This allows for images to be served at say /user/\<user\_id\>/image. Where `user_id` might be used as an identifier for user images.
-
-Check out sample [example](https://github.com/DhavalKapil/image-uploader/tree/master/example) for more details.
-
-### Additional Usage
-
-You can also check whether a particular image exists for a given identifier using the `exists` function
-
-```php
-$result = $imageUploader->exists("my_id");
-```
-
-It returns a boolean value.
-
-You can also customize the uploaded image, say by adding filters, cropping, etc by passing a `callback` function to the `upload` or `serve` function.
-
-```php
-$callback = function(&$image) {
- imagefilter($image, IMG_FILTER_GRAYSCALE);
-};
-
-$imageUploader->upload($_FILES["my_image"], "my_id", $callback);
-```
-
-This `callback` accepts a reference `&$image`, which is an image resource used by the [GD](http://php.net/manual/en/book.image.php) library. If passed to the `upload` function, it is called just before the image is being saved. Whereas, if passed to the `serve` function, it is called just before the image is buffered to the browser.
-
-## Contribution
-
-Contributions are welcome to this repository. If you know of any other security vulnerability, any bug, etc. feel free to file [issues](https://github.com/DhavalKapil/image-uploader/issues) and submit [pull requests](https://github.com/DhavalKapil/image-uploader/pulls).
-
-## Developers
-
-- [Dhaval Kapil](https://github.com/DhavalKapil)
-
-- [Aditya Prakash](https://github.com/adiitya)
- 
 ## License
 
-image-uploader is licensed under the MIT license.
+image-uploader is [MIT licensed](https://opensource.org/licenses/MIT).
+
+This project is a somewhat modified version of [Dhaval Kapil](https://github.com/DhavalKapil)'s [image-uploader](https://github.com/DhavalKapil/image-uploader/).
