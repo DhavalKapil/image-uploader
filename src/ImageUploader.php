@@ -1,239 +1,204 @@
 <?php
 
-class ImageUploader
-{
+class ImageUploader {
   /**
-   * The path to upload the images
-   *
+   * Path where images get uploaded to
    * @var string
    */
   private $path;
 
   /**
-   * The salt used by the application to encrypt image path
-   *
+   * Salt used by the application to hash images names
    * @var string
    */
   private $salt;
 
   /**
-   * The min size allowed for upload (in bytes)
-   *
-   * @var number
-   */
-  private $min_size;
-
-  /**
-   * The max size allowed for upload (in bytes)
-   *
+   * Maximum size allowed (in bytes)
    * @var number
    */
   private $max_size;
 
   /**
-   * List of valid mime types alongwith processing functions
-   *
+   * Valid mime types and processing functions
    * @var array
    */
   private static $MIME_TYPES_PROCESSORS = array(
-    "image/gif"       => array("imagecreatefromgif", "imagegif"),
-    "image/jpg"       => array("imagecreatefromjpeg", "imagejpeg"),
-    "image/jpeg"      => array("imagecreatefromjpeg", "imagejpeg"),
-    "image/png"       => array("imagecreatefrompng", "imagepng"),
-    "image/bmp"       => array("imagecreatefromwbmp", "imagewbmp")
+    "image/gif" => array("imagecreatefromgif", "imagegif"),
+    "image/jpg" => array("imagecreatefromjpeg", "imagejpeg"),
+    "image/jpeg" => array("imagecreatefromjpeg", "imagejpeg"),
+    "image/png" => array("imagecreatefrompng", "imagepng"),
+    "image/bmp" => array("imagecreatefromwbmp", "imagewbmp")
   );
 
   /**
-   * Constructor function
+   * Constructor method
    */
-  public function __construct($path = null,
-                              $salt = null,
-                              $min_file_size = null,
-                              $max_file_size = null)
-  {
+  public function __construct($path = null, $salt = null, $max_file_size = null) {
     $this->path = $path;
     $this->salt = $salt;
-    $this->min_file_size = $min_file_size;
     $this->max_file_size = $max_file_size;
   }
 
   /**
    * Set $path
-   *
-   * @param       $path         The path to upload images
+   * @param string $path Path where images get uploaded to
    */
-  public function setPath($path)
-  {
+  public function setPath($path) {
     $this->path = $path;
   }
 
   /**
    * Get $path
-   *
-   * @return      string        The path to upload images
+   * @return string Path where images get uploaded to
    */
-  public function getPath()
-  {
+  public function getPath() {
     return $this->path;
   }
 
   /**
    * Set $salt
-   *
-   * @param       $salt         The salt
+   * @param string $salt Salt used to hash images names
    */
-  public function setSalt($salt)
-  {
+  public function setSalt($salt) {
     $this->salt = $salt;
   }
 
   /**
    * Get $salt
-   *
-   * @return      string        The salt
+   * @return string Salt used to hash images names
    */
-  public function getSalt()
-  {
+  public function getSalt() {
     return $this->salt;
   }
 
   /**
-   * Set $min_file_size
-   *
-   * @param       $min_file_size          The minimum file size
-   */
-  public function setMinFileSize($min_file_size)
-  {
-    $this->min_file_size = $min_file_size;
-  }
-
-  /**
-   * Get $min_file_size
-   *
-   * @return      number                  The minimum file size
-   */
-  public function getMinFileSize()
-  {
-    return $this->min_file_size;
-  }
-
-  /**
    * Set $max_file_size
-   *
-   * @param       $max_file_size           The maximum file size
+   * @param number $max_file_size Maximum file size allowed (in bytes)
    */
-  public function setMaxFileSize($max_file_size)
-  {
+  public function setMaxFileSize($max_file_size) {
     $this->max_file_size = $max_file_size;
   }
 
   /**
    * Get $max_file_size
-   *
-   * @return      number                  The maximum file size
+   * @return number Maximum file size allowed (in bytes)
    */
-  public function getMaxFileSize()
-  {
+  public function getMaxFileSize() {
     return $this->max_file_size;
   }
 
   /**
-   * Checks the files and path parameters
-   *
-   * @var         $image         The $_FILE["image"] parameter
+   * Get hashed image name
+   * @param string $identifier Image identifier
+   * @return string MD5 hash
    */
-  private function checkParameters($image)
-  {
+  private function getHash($identifier) {
+    if ($this->salt === null) {
+      $image_name = md5($identifier);
+    } else {
+      $image_name = md5($identifier . $this->salt);
+    }
+
+    return $image_name;
+  }
+
+  /**
+   * Get path to a given filename
+   * @param string $identifier Image identifier
+   * @return string Relative path to the image
+   */
+  private function getImagePath($identifier) {
+    return $this->path . DIRECTORY_SEPARATOR . $identifier;
+  }
+
+  /**
+   * Check whether an image with this identifier exists
+   * @param string $identifier Image identifier
+   * @return boolean Indicates whether a file with the provided name exists
+   */
+  public function exists($identifier) {
+    $image_path = $this->getImagePath($identifier);
+
+    return file_exists($image_path);
+  }
+
+  /**
+   * Make sure we get the correct input
+   * @param array $image This is the $_FILES["image"] object
+   */
+  private function checkParameters($image) {
     if (!is_array($image)) {
-      throw new Exception("No image with given name uploaded");
+      throw new Exception("No image matching the name provided was uploaded");
     }
 
     if (!file_exists($this->path)) {
-      throw new Exception("Given path does not exists");
-    }
-
-    if ($this->min_file_size !== null
-      && $this->max_file_size !== null
-      && $this->min_file_size > $this->max_file_size) {
-      throw new Exception("Invalid file size parameters");
+      throw new Exception("Invalid path, make sure the provided route exists");
     }
   }
 
   /**
-   * Checks upload error
-   *
-   * @var         $image        The $_FILE["image"] parameter
+   * Check for upload errors
+   * @param array $image The $_FILES["image"] param
    */
-  private function checkUploadError($image)
-  {
-    if ( !isset($image['error']) || is_array($image['error']) ) {
-      throw new Exception("Invalid parameters");
+  private function checkUploadError($image) {
+    if (!isset($image["error"]) || is_array($image["error"])) {
+      throw new Exception("Invalid params");
     }
 
-    switch ($image['error']) {
-
+    switch ($image["error"]) {
       case UPLOAD_ERR_OK:
         break;
 
       case UPLOAD_ERR_NO_FILE:
-        throw new Exception('No file sent.');
+        throw new Exception("No file sent");
+        break;
 
       case UPLOAD_ERR_INI_SIZE:
-
       case UPLOAD_ERR_FORM_SIZE:
-        throw new Exception('Exceeded filesize limit.');
+        throw new Exception("Exceeded maximum filesize limit");
+        break;
 
       default:
-        throw new Exception('Unknown errors.');
+        throw new Exception("Oops, something went wrong when trying to upload your image!");
     }
   }
 
   /**
-   * Checks if uploaded file size is within upload limit
-   *
-   * @var         $image        The $_FILE["image"] parameter
+   * Check whether uploaded file size is within max filesize limit
+   * @param array $image The $_FILES["image"] param
    */
-  private function checkFileSize($image)
-  {
-    if ($this->min_file_size !== null && $image['size'] < $this->min_file_size) {
-      throw new Exception("Size too small");
-    }
-    if ($this->max_file_size !== null && $image['size'] > $this->max_file_size) {
-      throw new Exception("Size limit exceeded");
+  private function checkFileSize($image) {
+    if ($this->max_file_size !== null && $image["size"] > $this->max_file_size) {
+      throw new Exception("Exceeded maximum filesize limit");
     }
   }
 
-
-
   /**
-   * Checks if first 100 bytes contains any non ASCII char
-   * Throws an exception on any error
-   *
-   * @var         $image        The $_FILE["image"] parameter
+   * Check whether first 100 bytes contain any non ASCII character
+   * @param array $image The $_FILES["image"] param
    */
-  private function checkInitialBytes($image)
+  private function checkInitialBytes($image) // @TODO
   {
-    // Reading first 100 bytes
-    $contents = file_get_contents($image['tmp_name'], null, null, 0, 100);
+    // Read first 100 bytes
+    $content = file_get_contents($image["tmp_name"], null, null, 0, 100);
 
-    if ($contents === false) {
+    if ($content === false) {
       throw new Exception("Unable to read uploaded file");
     }
 
     $regex = "[\x01-\x08\x0c-\x1f]";
-    if (preg_match($regex, $contents)) {
-      throw new Exception("Unknown bytes found");
+
+    if (preg_match($regex, $content)) {
+      throw new Exception("Invalid image content found");
     }
   }
 
   /**
-   * Makes a list of security checks before uploading
-   * Throws an exception on any error
-   *
-   * @var         $image        The $_FILE["image"] parameter
+   * Run a handful of safety checks before uploading the image
+   * @param array $image The $FILES["image"] param
    */
-  private function securityChecks($image)
-  {
+  private function securityChecks($image) {
     $this->checkParameters($image);
     $this->checkUploadError($image);
     $this->checkFileSize($image);
@@ -241,15 +206,13 @@ class ImageUploader
   }
 
   /**
-   * Checks the mime type as well as uses the GD library to reprocess the image
-   *
-   * @var         $image        The $_FILE["image"] parameter
-   * @var         $callback     The callback function for further image manipulations
+   * Check the mime type as well as uses the GD library to reprocess the image
+   * @param array $image The $_FILES["image"] param
+   * @param function $callback Callback to allow for extra image manipulation
    */
-  private function reprocessImage($image, $callback)
-  {
-    // Extracting mime type using getimagesize
+  private function reprocessImage($image, $callback) {
     $image_info = getimagesize($image["tmp_name"]);
+
     if ($image_info === null) {
       throw new Exception("Invalid image type");
     }
@@ -269,90 +232,47 @@ class ImageUploader
       throw new Exception("Unable to create reprocessed image from file");
     }
 
-    // Calling callback(if set) with path of image as a parameter
+    // Executing callback (if any), need to pass in image path as param
     if ($callback !== null) {
       $callback($reprocessed_image);
     }
 
     $image_to_file($reprocessed_image, $image["tmp_name"]);
 
-    // Freeing up memory
+    // Free up memory
     imagedestroy($reprocessed_image);
   }
 
   /**
-   * Returns the path of an image depending on identifier
-   *
-   * @var         $identifier   The image identifier
-   *
-   * @return      string        The path of the image
+   * Upload an image
+   * @param array $image The $_FILES["image"] param
+   * @param string $identifier Image identifier
+   * @param function $callback Optional callback, allows for extra image manipulation
+   * @return boolean Indicates whether the image upload was successful
    */
-  private function getImagePath($identifier)
-  {
-    $image_name = "";
-    if ($this->salt === null) {
-      $image_name = md5($identifier);
-    }
-    else {
-      $image_name = md5($identifier . $this->salt);
-    }
-
-    $image_path = $this->path . DIRECTORY_SEPARATOR . $image_name;
-
-    return $image_path;
-  }
-
-  /**
-   * Uploads a particular image
-   *
-   * @var         $image        The $_FILE["image"] parameter
-   * @var         $identifier   The image identifier
-   * @var         $callback     The callback to be called after security checks
-   *
-   * @return      boolean       Whether the upload was successfull or not
-   */
-  public function upload($image, $identifier, $callback = null)
-  {
+  public function upload($image, $identifier, $callback = null) {
     $this->securityChecks($image);
-
     $this->reprocessImage($image, $callback);
 
-    $destination_path = $this->getImagePath($identifier);
+    $new_name = $this->getHash($identifier);
+    $destination_path = $this->getImagePath($new_name);
     $result = move_uploaded_file($image["tmp_name"], $destination_path);
 
     return $result;
   }
 
   /**
-   * Checks whether an image with this identifier exists or not
-   *
-   * @var         $identifier   The image identifier
-   *
-   * @return      bool          whether an image exists or not
+   * Serve an image
+   * @param string $identifier Image identifier
+   * @param function $callback Optional callback, allows for extra image manipulation
+   * @return boolean Indicates whether the image has been served successfully
    */
-  public function exists($identifier)
-  {
-    $image_path = $this->getImagePath($identifier);
-
-    return file_exists($image_path);
-  }
-
-  /**
-   * Serves an image
-   *
-   * @var         $identifier   The image identifier
-   * @var         $callback     The callback to be called before serving the image
-   *
-   * @return      bool          success or failure
-   */
-  public function serve($identifier, $callback = null)
-  {
-    if (!$this->exists($identifier)) {
+  public function serve($filename, $callback = null) {
+    if (!$this->exists($filename)) {
       return false;
     }
 
-    // Calculating the image path and the mime type
-    $image_path = $this->getImagePath($identifier);
+    $image_path = $this->getImagePath($filename);
     $mime_type = getimagesize($image_path)["mime"];
 
     $image_from_file = self::$MIME_TYPES_PROCESSORS[$mime_type][0];
@@ -361,7 +281,7 @@ class ImageUploader
     $image = $image_from_file($image_path);
 
     if (!$image) {
-      throw new Exception("Unable to read image while serving");
+      throw new Exception("Unable to read image");
     }
 
     if ($callback !== null) {
@@ -370,7 +290,6 @@ class ImageUploader
 
     header("Content-Type: " . $mime_type);
 
-    // Output buffering the image
     $result = $image_to_file($image, null);
 
     return $result;
