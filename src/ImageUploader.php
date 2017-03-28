@@ -31,6 +31,20 @@ class ImageUploader
   private $max_size;
 
   /**
+   * The width to resize image
+   *
+   * @var number
+   */
+  private $newWidth;
+
+  /**
+   * The height to resize image
+   *
+   * @var number
+   */
+  private $newHeight;
+
+  /**
    * List of valid mime types alongwith processing functions
    *
    * @var array
@@ -199,6 +213,7 @@ class ImageUploader
       throw new Exception("Size too small");
     }
     if ($this->max_file_size !== null && $image['size'] > $this->max_file_size) {
+      $df = $this->max_file_size;
       throw new Exception("Size limit exceeded");
     }
   }
@@ -375,4 +390,92 @@ class ImageUploader
 
     return $result;
   }
+
+/**
+   * Serves an image resized
+   *
+   * @var         $identifier   The image identifier
+   * @var         $percent     The percentage that image will be resize
+   * @var         $maxWidth     The max width that image will be resized
+   * @var         $maxHeight    The max height that image will be resized
+   *
+   * @return      bool          success or failure
+   */
+  public function serveResize($identifier, $percent = null, $maxWidth = null, $maxHeight = null)
+  {
+    if (!$this->exists($identifier)) {
+      return false;
+    }
+
+    // Calculating the image path and the mime type
+    $image_path = $this->getImagePath($identifier);
+    $mime_type = getimagesize($image_path)["mime"];
+
+    $image_from_file = self::$MIME_TYPES_PROCESSORS[$mime_type][0];
+    $image_to_file = self::$MIME_TYPES_PROCESSORS[$mime_type][1];
+
+    $image = $image_from_file($image_path);
+
+    if (!$image) {
+      throw new Exception("Unable to read image while serving");
+    }
+
+    //applying resize on image proportionally according parameter of resize
+    list($width, $height) = getimagesize($image_path);
+    $ratio = $width/$height;  
+    if($maxWidth !== null)
+      $this->resizeWidthHeight($ratio, $maxWidth);
+    if($maxHeight !== null)
+      $this->resizeWidthHeight($ratio, $maxHeight);
+    if($percent != null){
+      $newwidth = $width * $percent;
+      $newheight = $height * $percent;  
+    }
+
+    
+    $resized = imagecreatetruecolor($this->newwidth, $this->newheight);
+    $source = $image_from_file($image_path);
+
+    imagecopyresized( 
+                $resized, 
+                $source, 
+                0, 
+                0, 
+                0, 
+                0, 
+                $this->newwidth, 
+                $this->newheight, 
+                $width, 
+                $height);
+
+    $image = $resized;
+
+    header("Content-Type: " . $mime_type);
+
+    // Output buffering the image
+    $result = $image_to_file($image, null);
+
+    return $result;
+  }
+
+  /**
+   * Resize image
+   *
+   * @var         $ratio   The ratio of image
+   * @var         $maxValue     The max value to width or height resize
+   *
+   * @return      void          
+   */
+  public function resizeWidthHeight($ratio, $maxValue){
+
+    if( $ratio > 1) {
+          $this->newwidth = $maxValue;
+          $this->newheight = $maxValue/$ratio;
+      }
+      else {
+          $this->newwidth = $maxValue*$ratio;
+          $this->newheight = $maxValue;
+      }  
+  }
+
 }
