@@ -212,8 +212,7 @@ class ImageUploader
     if ($this->min_file_size !== null && $image['size'] < $this->min_file_size) {
       throw new Exception("Size too small");
     }
-    if ($this->max_file_size !== null && $image['size'] > $this->max_file_size) {
-      $df = $this->max_file_size;
+    if ($this->max_file_size !== null && $image['size'] > $this->max_file_size) {      
       throw new Exception("Size limit exceeded");
     }
   }
