@@ -217,8 +217,6 @@ class ImageUploader
     }
   }
 
-
-
   /**
    * Checks if first 100 bytes contains any non ASCII char
    * Throws an exception on any error
