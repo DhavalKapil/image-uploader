@@ -7,6 +7,13 @@ class ImageUploader
    *
    * @var string
    */
+  private $image_name;
+
+  /**
+   * The path to upload the images
+   *
+   * @var string
+   */
   private $path;
 
   /**
@@ -212,10 +219,13 @@ class ImageUploader
     if ($this->min_file_size !== null && $image['size'] < $this->min_file_size) {
       throw new Exception("Size too small");
     }
-    if ($this->max_file_size !== null && $image['size'] > $this->max_file_size) {      
+    if ($this->max_file_size !== null && $image['size'] > $this->max_file_size) {
+      $df = $this->max_file_size;
       throw new Exception("Size limit exceeded");
     }
   }
+
+
 
   /**
    * Checks if first 100 bytes contains any non ASCII char
@@ -299,7 +309,7 @@ class ImageUploader
    *
    * @return      string        The path of the image
    */
-  private function getImagePath($identifier)
+  public function getImagePath($identifier)
   {
     $image_name = "";
     if ($this->salt === null) {
@@ -388,6 +398,10 @@ class ImageUploader
     return $result;
   }
 
+
+  
+
+
 /**
    * Serves an image resized
    *
@@ -445,12 +459,9 @@ class ImageUploader
                 $width, 
                 $height);
 
-    $image = $resized;
-
-    header("Content-Type: " . $mime_type);
-
-    // Output buffering the image
-    $result = $image_to_file($image, null);
+    $image = $resized;    
+    
+    $result = $image_to_file($image, $image_path.'_thumb', 0);
 
     return $result;
   }
