@@ -447,7 +447,7 @@ class ImageUploader
     $resized = imagecreatetruecolor($this->newwidth, $this->newheight);
     $source = $image_from_file($image_path);
 
-    imagecopyresized( 
+    imagecopyresampled(
                 $resized, 
                 $source, 
                 0, 
@@ -461,7 +461,7 @@ class ImageUploader
 
     $image = $resized;    
     
-    $result = $image_to_file($image, $image_path.'_thumb', 0);
+    $result = $image_to_file($image, $image_path.'_thumb', 100);
 
     return $result;
   }
