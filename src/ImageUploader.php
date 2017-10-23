@@ -52,6 +52,13 @@ class ImageUploader
   private $newHeight;
 
   /**
+   * The extension of file
+   *
+   * @var string
+   */
+  private $extensionFile;
+
+  /**
    * List of valid mime types alongwith processing functions
    *
    * @var array
@@ -156,6 +163,26 @@ class ImageUploader
   public function getMaxFileSize()
   {
     return $this->max_file_size;
+  }
+
+  /**
+   * Get $extension
+   *
+   * @return      string  the extension of file
+   */
+  public function getExtensionFile()
+  {
+    return $this->extensionFile;
+  }
+
+  /**
+   * Set $max_file_size
+   *
+   * @param       $max_file_size           The maximum file size
+   */
+  public function setExtensionFile($extension)
+  {
+    $this->extensionFile = '.'.$extension;
   }
 
   /**
@@ -340,7 +367,8 @@ class ImageUploader
     $this->reprocessImage($image, $callback);
 
     $destination_path = $this->getImagePath($identifier);
-    $result = move_uploaded_file($image["tmp_name"], $destination_path);
+    $sd = $this->extensionFile;
+    $result = move_uploaded_file($image["tmp_name"], $destination_path.$this->extensionFile);
 
     return $result;
   }
@@ -356,7 +384,7 @@ class ImageUploader
   {
     $image_path = $this->getImagePath($identifier);
 
-    return file_exists($image_path);
+    return file_exists($image_path.$this->extensionFile);
   }
 
   /**
@@ -364,6 +392,7 @@ class ImageUploader
    *
    * @var         $identifier   The image identifier
    * @var         $callback     The callback to be called before serving the image
+   * @var         $extension    The extension format of file
    *
    * @return      bool          success or failure
    */
@@ -406,13 +435,14 @@ class ImageUploader
    * Serves an image resized
    *
    * @var         $identifier   The image identifier
+   * @var         $name         Name of file
    * @var         $percent     The percentage that image will be resize
    * @var         $maxWidth     The max width that image will be resized
    * @var         $maxHeight    The max height that image will be resized
    *
    * @return      bool          success or failure
    */
-  public function serveResize($identifier, $percent = null, $maxWidth = null, $maxHeight = null)
+  public function serveResize($identifier, $name = false, $percent = null, $maxWidth = null, $maxHeight = null)
   {
     if (!$this->exists($identifier)) {
       return false;
@@ -420,6 +450,7 @@ class ImageUploader
 
     // Calculating the image path and the mime type
     $image_path = $this->getImagePath($identifier);
+    $image_path = $image_path . $this->extensionFile;
     $mime_type = getimagesize($image_path)["mime"];
 
     $image_from_file = self::$MIME_TYPES_PROCESSORS[$mime_type][0];
@@ -461,7 +492,12 @@ class ImageUploader
 
     $image = $resized;    
     
-    $result = $image_to_file($image, $image_path.'_thumb', 100);
+    $image_path = substr($image_path, 0, strlen($image_path)-4);
+    $image_path = ($name) ? $image_path.$this->extensionFile : $image_path.'_thumb'.$this->extensionFile;
+    if($image_to_file == 'imagepng')
+      $result = $image_to_file($image, $image_path, 9);
+    else
+      $result = $image_to_file($image, $image_path, 100);
 
     return $result;
   }
