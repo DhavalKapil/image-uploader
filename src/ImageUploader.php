@@ -492,12 +492,14 @@ class ImageUploader
 
     $image = $resized;    
     
-    $image_path = substr($image_path, 0, strlen($image_path)-4);
-    $image_path = ($name) ? $image_path.$this->extensionFile : $image_path.'_thumb'.$this->extensionFile;
+
+    $image_path = substr($image_path, 0, strlen($image_path) - strlen($this->extensionFile));            
+    $image_path = ($name) ? $image_path . $this->extensionFile : $image_path . '_thumb' . $this->extensionFile;
     if($image_to_file == 'imagepng')
       $result = $image_to_file($image, $image_path, 9);
     else
       $result = $image_to_file($image, $image_path, 100);
+
 
     return $result;
   }
