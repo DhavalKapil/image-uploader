@@ -1,5 +1,5 @@
 {
-  "name": "rukaLukas/image-uploader",
+  "name": "dhaval/image-uploader",
   "type": "library",
   "description": "A simple and elegant PHP library for securely uploading images",
   "keywords": [
@@ -8,7 +8,7 @@
     "secure",
     "customize"
   ],
-  "homepage": "https://github.com/rukaLukas/image-uploader",
+  "homepage": "https://github.com/dhavalkapil/image-uploader",
   "license": "MIT",
   "authors": [
     {
@@ -22,12 +22,7 @@
       "email": "adiitya.adda@gmail.com",
       "homepage": "https://github.com/adiitya",
       "role": "developer"
-    },
-    {
-      "name": "Lucas Figueiredo",
-      "email": "lukas.figueiredo@hotmail.com",      
-      "role": "developer"
-    },
+    }
   ],
   "require": {
     "php": ">=5.5.0"
