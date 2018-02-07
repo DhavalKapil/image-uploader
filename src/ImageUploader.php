@@ -7,6 +7,13 @@ class ImageUploader
    *
    * @var string
    */
+  private $image_name;
+
+  /**
+   * The path to upload the images
+   *
+   * @var string
+   */
   private $path;
 
   /**
@@ -29,6 +36,27 @@ class ImageUploader
    * @var number
    */
   private $max_size;
+
+  /**
+   * The width to resize image
+   *
+   * @var number
+   */
+  private $newWidth;
+
+  /**
+   * The height to resize image
+   *
+   * @var number
+   */
+  private $newHeight;
+
+  /**
+   * The extension of file
+   *
+   * @var string
+   */
+  private $extensionFile;
 
   /**
    * List of valid mime types alongwith processing functions
@@ -138,6 +166,26 @@ class ImageUploader
   }
 
   /**
+   * Get $extension
+   *
+   * @return      string  the extension of file
+   */
+  public function getExtensionFile()
+  {
+    return $this->extensionFile;
+  }
+
+  /**
+   * Set $max_file_size
+   *
+   * @param       $max_file_size           The maximum file size
+   */
+  public function setExtensionFile($extension)
+  {
+    $this->extensionFile = '.'.$extension;
+  }
+
+  /**
    * Checks the files and path parameters
    *
    * @var         $image         The $_FILE["image"] parameter
@@ -199,6 +247,7 @@ class ImageUploader
       throw new Exception("Size too small");
     }
     if ($this->max_file_size !== null && $image['size'] > $this->max_file_size) {
+      $df = $this->max_file_size;
       throw new Exception("Size limit exceeded");
     }
   }
@@ -287,7 +336,7 @@ class ImageUploader
    *
    * @return      string        The path of the image
    */
-  private function getImagePath($identifier)
+  public function getImagePath($identifier)
   {
     $image_name = "";
     if ($this->salt === null) {
@@ -318,7 +367,8 @@ class ImageUploader
     $this->reprocessImage($image, $callback);
 
     $destination_path = $this->getImagePath($identifier);
-    $result = move_uploaded_file($image["tmp_name"], $destination_path);
+    $sd = $this->extensionFile;
+    $result = move_uploaded_file($image["tmp_name"], $destination_path.$this->extensionFile);
 
     return $result;
   }
@@ -334,7 +384,7 @@ class ImageUploader
   {
     $image_path = $this->getImagePath($identifier);
 
-    return file_exists($image_path);
+    return file_exists($image_path.$this->extensionFile);
   }
 
   /**
@@ -342,6 +392,7 @@ class ImageUploader
    *
    * @var         $identifier   The image identifier
    * @var         $callback     The callback to be called before serving the image
+   * @var         $extension    The extension format of file
    *
    * @return      bool          success or failure
    */
@@ -375,4 +426,102 @@ class ImageUploader
 
     return $result;
   }
+
+
+  
+
+
+/**
+   * Serves an image resized
+   *
+   * @var         $identifier   The image identifier
+   * @var         $name         Name of file
+   * @var         $percent     The percentage that image will be resize
+   * @var         $maxWidth     The max width that image will be resized
+   * @var         $maxHeight    The max height that image will be resized
+   *
+   * @return      bool          success or failure
+   */
+  public function serveResize($identifier, $name = false, $percent = null, $maxWidth = null, $maxHeight = null)
+  {
+    if (!$this->exists($identifier)) {
+      return false;
+    }
+
+    // Calculating the image path and the mime type
+    $image_path = $this->getImagePath($identifier);
+    $image_path = $image_path . $this->extensionFile;
+    $mime_type = getimagesize($image_path)["mime"];
+
+    $image_from_file = self::$MIME_TYPES_PROCESSORS[$mime_type][0];
+    $image_to_file = self::$MIME_TYPES_PROCESSORS[$mime_type][1];
+
+    $image = $image_from_file($image_path);
+
+    if (!$image) {
+      throw new Exception("Unable to read image while serving");
+    }
+
+    //applying resize on image proportionally according parameter of resize
+    list($width, $height) = getimagesize($image_path);
+    $ratio = $width/$height;  
+    if($maxWidth !== null)
+      $this->resizeWidthHeight($ratio, $maxWidth);
+    if($maxHeight !== null)
+      $this->resizeWidthHeight($ratio, $maxHeight);
+    if($percent != null){
+      $newwidth = $width * $percent;
+      $newheight = $height * $percent;  
+    }
+
+    
+    $resized = imagecreatetruecolor($this->newwidth, $this->newheight);
+    $source = $image_from_file($image_path);
+
+    imagecopyresampled(
+                $resized, 
+                $source, 
+                0, 
+                0, 
+                0, 
+                0, 
+                $this->newwidth, 
+                $this->newheight, 
+                $width, 
+                $height);
+
+    $image = $resized;    
+    
+
+    $image_path = substr($image_path, 0, strlen($image_path) - strlen($this->extensionFile));            
+    $image_path = ($name) ? $image_path . $this->extensionFile : $image_path . '_thumb' . $this->extensionFile;
+    if($image_to_file == 'imagepng')
+      $result = $image_to_file($image, $image_path, 9);
+    else
+      $result = $image_to_file($image, $image_path, 100);
+
+
+    return $result;
+  }
+
+  /**
+   * Resize image
+   *
+   * @var         $ratio   The ratio of image
+   * @var         $maxValue     The max value to width or height resize
+   *
+   * @return      void          
+   */
+  public function resizeWidthHeight($ratio, $maxValue){
+
+    if( $ratio > 1) {
+          $this->newwidth = $maxValue;
+          $this->newheight = $maxValue/$ratio;
+      }
+      else {
+          $this->newwidth = $maxValue*$ratio;
+          $this->newheight = $maxValue;
+      }  
+  }
+
 }
