@@ -375,4 +375,14 @@ class ImageUploader
 
     return $result;
   }
+  public function delete($identifier)
+  {
+    $image_path = $this->getImagePath($identifier);
+
+    if (!file_exists($image_path)) {
+      return false;
+    }
+
+    return unlink($image_path);
+  }
 }
